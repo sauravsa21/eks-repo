@@ -13,7 +13,7 @@ agent any
 stages {
    stage ("checkout") {
        steps {
-           checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/sauravsa21/django-multiple-user-types-example']]])
+           checkout scm
        }
    }
   stage ("building image") {
@@ -32,16 +32,10 @@ stages {
            sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG3}"
            }   
     }
-   stage('Apply Kubernetes files') {
-    steps {
-     withKubeConfig([credentialsId: 'kubeconfig']) {
-       sh 'whoami'
-      sh 'kubectl get po'
-      sh 'kubectl set image deployment/firstdeploy mycontainer=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG1}'
-     
-   }
- }
-}
+    stage('Trigger ManifestUpdate') {
+                echo "triggering updatemanifestjob"
+                build job: 'deploymentpipeline', parameters: [string(name: 'DOCKERTAG', value: env.BUILD_NUMBER)]
+        }
    
 }
 }
