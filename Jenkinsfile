@@ -1,6 +1,6 @@
 pipeline {
-agent any
-   environment {
+    agent any
+    environment {
        AWS_ACCOUNT_ID="692851696394"
        AWS_DEFAULT_REGION="us-east-1"
        IMAGE_REPO_NAME="test"
@@ -10,13 +10,14 @@ agent any
        IMAGE_TAG3="latest"
        TASK_DEF="test-task:5"
  }
-stages {
-   stage ("checkout") {
+ stages {
+        stage ("checkout") {
        steps {
-           checkout scm
+           checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/sauravsa21/eks-repo.git']]])
        }
    }
-  stage ("building image") {
+
+ stage ("building image") {
       steps {
           sh 'docker build -t test . --network=host --no-cache'
       }
@@ -32,10 +33,11 @@ stages {
            sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG3}"
            }   
     }
-    stage('Trigger ManifestUpdate') {
-                echo "triggering updatemanifestjob"
-                build job: 'deploymentpipeline', parameters: [string(name: 'DOCKERTAG', value: env.BUILD_NUMBER)]
+        stage("PARAM 1") {
+            steps {
+                 build job: 'k8s-pipeline', parameters: [string(name: 'DOCKERTAG', value: "${env.BUILD_NUMBER}")]
+            }
         }
-   
+    
 }
 }
